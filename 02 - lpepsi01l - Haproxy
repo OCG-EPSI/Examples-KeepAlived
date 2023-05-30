@@ -1,0 +1,58 @@
+global
+    daemon
+    maxconn 10000
+    user haproxy
+    group haproxy
+    pidfile /var/run/haproxy.pid
+    chroot /var/lib/haproxy
+    stats socket /var/run/haproxy.sock level admin
+    log 127.0.0.1 local0 info
+    ssl-dh-param-file /etc/haproxy/dh-param
+    ssl-default-bind-options prefer-client-ciphers no-sslv3 no-tlsv10 no-tlsv11 no-tlsv12 no-tls-tickets
+    ssl-default-server-options no-sslv3 no-tlsv10 no-tlsv11 no-tlsv12 no-tls-tickets
+
+
+defaults
+    mode http
+    log global
+    option httplog
+    option http-server-close
+    option redispatch
+    retries 3
+    timeout http-request 10s
+    timeout queue 1m
+    timeout connect 10s
+    timeout client 120s
+    timeout server 120s
+    timeout http-keep-alive 10s
+    timeout check 10s
+
+#---------------------------------------------------------------------
+# FRONTENDS
+#---------------------------------------------------------------------
+
+frontend ft_wordpress_epsi
+    bind 10.46.83.161:443
+    default_backend bk_wordpress_epsi
+
+
+#---------------------------------------------------------------------
+# BACKENDS
+#---------------------------------------------------------------------
+
+backend bk_wordpress_epsi
+    option forwardfor header X-WL-Upstream
+    server tpepsi01l 192.168.1.111:443
+    server tpepsi02l 192.168.1.112:443
+
+
+#---------------------------------------------------------------------
+# STATS
+#---------------------------------------------------------------------
+frontend stats
+    mode http
+    bind 10.46.83.161:80
+    stats enable
+    stats uri /stats
+    stats refresh 10s
+    stats admin if LOCALHOST
